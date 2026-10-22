@@ -46,6 +46,9 @@ module.exports = { expo: {
   },
   "owner": "bhuvankrithiks-team",
   "extra": {
+    "eas": {
+      "projectId": "3e80728c-59e8-42ea-b2ff-596dd3b2b0dd"
+    },
     "firebase": {
       "apiKey": process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '',
       "authDomain": process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
