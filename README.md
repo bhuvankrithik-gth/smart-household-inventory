@@ -5,7 +5,7 @@
 A real, installable React Native (Expo, TypeScript) app for Indian households (₹, metric units): shared household inventory with batches & expiry, rule-based run-out predictions, smart shopping (purchase → inventory exactly once), budgets & price history, expiry-aware recipes, waste tracking (SDG 12), and a data-honest assistant. One codebase: Android APK + iOS-compatible + Expo web for laptops.
 
 ## Modes — read this first
-- **Local mode (verified, default):** full app on-device via AsyncStorage. Works offline on a fresh phone with **no account and no server**. Demo household (labelled, removable) loads on first run; demo login `demo@local` / `demo1234`.
+- **Local mode (verified, default):** full app on-device via AsyncStorage. Works offline on a fresh phone with **no server**. On first open you create an account or sign in (in local mode accounts live on this device); then create a household, or join one with an invite code, and start tracking. The app starts completely empty — no sample data.
 - **Cloud mode (Firebase, integration-ready):** Firebase project **smart-household-inventory** (Spark, asia-south1 Mumbai, Email/Password enabled) config is bundled from `.env` (`EXPO_PUBLIC_FIREBASE_*`) via `app.config.js`. **Required one-time step before cloud works:** publish the rules — Firebase Console → Firestore Database → **Rules** → paste the repo's `firestore.rules` → **Publish** (or `firebase deploy --only firestore:rules` after your own `firebase login`). Until then Firestore is deny-all; the app shows a clear "cloud rules not yet published / permission-denied" state on the Login → Check cloud status button, and local mode keeps working.
 
 ## Run it

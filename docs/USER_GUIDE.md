@@ -1,6 +1,6 @@
 # User Guide
 
-1. **Start:** Open the app → you land on the demo household (clearly labelled sample data) or log in locally (`demo@local` / `demo1234`), or Register (you must accept Terms + Privacy, v1.0; 18+ or parent/guardian consent). Remove demo data any time in Profile.
+1. **Start:** Open the app → you land on the sign-in screen. Register (you must accept Terms + Privacy, v1.0; 18+ or parent/guardian consent) or log in with your local account. Then create a household or join one with an invite code — each account only ever sees its own households, never another account's data.
 2. **Household:** Profile → Household: create a home, share its invite code, family join with the code, switch households, owner removes members, members can leave.
 3. **Inventory:** Add items manually (works fully offline), by barcode scan (camera permission is explained first; unknown barcodes fall back to manual entry — the app never invents a product), or by receipt (pick a photo; if no OCR endpoint is configured you review/type the lines — nothing saves until you press Confirm). On an item: consume, receive, discard (creates a waste record), transfer location, correct stock, see batches, expiry, history, prediction and "how much to buy" with its reason.
 4. **Shopping:** Add items (duplicates warn, you may override), Generate suggestions from low stock + predictions, Mark purchased → stock and spending update exactly once.

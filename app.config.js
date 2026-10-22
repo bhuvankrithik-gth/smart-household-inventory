@@ -4,18 +4,24 @@
 module.exports = { expo: {
   "name": "Smart Household Inventory",
   "slug": "smart-household-inventory",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "orientation": "portrait",
   "icon": "./assets/images/icon.png",
   "scheme": "smarthouseholdinventory",
-  "userInterfaceStyle": "automatic",
+  "userInterfaceStyle": "dark",
+  "runtimeVersion": {
+    "policy": "appVersion"
+  },
+  "updates": {
+    "url": "https://u.expo.dev/3e80728c-59e8-42ea-b2ff-596dd3b2b0dd"
+  },
   "ios": {
     "icon": "./assets/expo.icon",
     "bundleIdentifier": "com.bhuvankrithik.smarthouseholdinventory"
   },
   "android": {
     "adaptiveIcon": {
-      "backgroundColor": "#E6F4FE",
+      "backgroundColor": "#0B1220",
       "foregroundImage": "./assets/images/android-icon-foreground.png",
       "backgroundImage": "./assets/images/android-icon-background.png",
       "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -32,7 +38,7 @@ module.exports = { expo: {
     [
       "expo-splash-screen",
       {
-        "backgroundColor": "#208AEF",
+        "backgroundColor": "#0B1220",
         "image": "./assets/images/splash-icon.png",
         "imageWidth": 76
       }

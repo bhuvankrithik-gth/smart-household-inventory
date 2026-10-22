@@ -1,4 +1,4 @@
-import { Batch, Item, Movement, Prefs, Purchase, ShoppingItem, Unit, Waste } from './types';
+import { Batch, Item, Member, Movement, Prefs, Purchase, ShoppingItem, Unit, Waste } from './types';
 // ---------- units ----------
 const FAMILY: Record<Unit,string> = { g:'mass', kg:'mass', ml:'volume', l:'volume', pcs:'count', packet:'count', box:'count', bottle:'count' };
 const TO_CANON: Record<Unit,number> = { g:1, kg:1000, ml:1, l:1000, pcs:1, packet:1, box:1, bottle:1 };
@@ -73,3 +73,8 @@ export function wasteSummary(records:Waste[]){ const value=records.reduce((s,w)=
 export function hashPassword(pw:string){ let h1=5381,h2=52711; for(let i=0;i<pw.length;i++){ const c=pw.charCodeAt(i); h1=(h1*33)^c; h2=(h2*31)^c; } return `local-${(h1>>>0).toString(16)}-${(h2>>>0).toString(16)}`; }
 export function uid(p='id'){ return `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`; }
 export function fmtMoney(v:number, sym='₹'){ return `${sym}${v.toLocaleString('en-IN',{maximumFractionDigits:2})}`; }
+// ---------- account / household resolution ----------
+// The ONLY household a signed-in user may land on is one they are a member of.
+// Returns undefined when the user belongs to no household — callers must never
+// fall back to another account's household (account data isolation).
+export function householdIdForUser(members:Member[], userId:string):string|undefined{ return members.find(m=>m.userId===userId)?.householdId; }

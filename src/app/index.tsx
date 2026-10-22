@@ -1,3 +1,2 @@
-
-import { Redirect } from 'expo-router'; import { useStore } from '../data/store'; import { Text, View } from 'react-native';
-export default function Index(){ const s=useStore(); if(!s.ready) return <View style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Loading Smart Household Inventory…</Text></View>; return <Redirect href={s.user? '/(tabs)' : '/login'} />; }
+import { Redirect } from 'expo-router'; import { useStore } from '../data/store'; import { Text, View } from 'react-native'; import { useC } from '../components/ui';
+export default function Index(){ const s=useStore(); const c=useC(); if(!s.ready) return <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:c.bg}}><Text style={{color:c.text,fontSize:15}}>Loading Smart Household Inventory…</Text></View>; return <Redirect href={s.user? '/(tabs)' : '/login'} />; }

@@ -6,8 +6,15 @@
 4. **OCR:** no OCR endpoint is configured (`EXPO_PUBLIC_OCR_API_URL` blank). Receipt flow works as pick-image → review/type lines → confirm-save. Point it at your own OCR service to enable automatic extraction. Receipt images are not uploaded anywhere when no endpoint is configured.
 5. **Voice:** speech-recognition native plugins are not bundled (they need a development build); the Assistant supports typed natural language + confirmation, keyboard dictation, and text-to-speech examples via expo-speech.
 6. **Notifications:** local notifications are generated on demand from real data when the user taps the reminder check; the OS does not guarantee exact background schedules.
-7. **Add-item form:** for speed it defaults new items to category "Other household essentials" / unit "pcs" / location "Pantry" (noted in-app); richer per-item entry is a UX follow-up. All categories/units exist in the data model and demo items use them properly.
+7. **Add-item form:** for speed it defaults new items to category "Other household essentials" / unit "pcs" / location "Pantry" (noted in-app); richer per-item entry is a UX follow-up. All categories/units exist in the data model.
 8. **Item detail consumption for recipes** records a small standard usage amount; exact quantities can be adjusted per item.
 9. **Legal documents are templates**, not a lawyer's review — see docs/LEGAL.md. Grievance-contact email placeholder must be filled by the owner before public launch.
 10. **iOS:** code is iOS-compatible (Expo managed workflow, no Android-only hacks) but an iOS build requires EAS + the user's Apple Developer login/TestFlight; it has not been built or tested here.
-11. **Web export** is a compatibility/demo target (laptop). The product is the native app; some native modules (camera) are phone-only features with manual fallbacks on web.
+11. **Web export** is a compatibility target (laptop). The product is the native app; some native modules (camera) are phone-only features with manual fallbacks on web.
+
+## v1.1.0 notes (2026-10-23)
+
+- **Sample/demo data removed entirely.** The app starts empty: first open goes to sign-in/register, and a new account has no household until it creates or joins one. The on-device store key was bumped (`shi-db-v4`), so installs that carried the old sample dataset start clean instead of migrating it.
+- **Account isolation hardened.** Signing in always lands on a household the signed-in account belongs to (never the previous account's); register/logout clear the current-household pointer, and a persisted pointer is re-validated on launch.
+- **Full dark theme.** The app is dark-only (`userInterfaceStyle: 'dark'`, deep-navy surfaces, no light/white borders), with a dark tab bar, header and splash.
+- **OTA updates enabled from this build onward.** `expo-updates` is configured (`updates.url` → the EAS project, `runtimeVersion` policy `appVersion`, production channel in `eas.json`), so future JS/UI changes can ship with `eas update` without a reinstall. Builds before v1.1.0 cannot receive these updates — v1.1.0 itself must be installed as an APK once.
