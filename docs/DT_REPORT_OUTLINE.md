@@ -1,0 +1,10 @@
+# DT Project Report Outline — Smart Household Inventory
+
+1. **Problem:** Indian households buy duplicates, forget expiry dates, waste food, and have no shared view of "what's at home". Interviews/assumption log: families shop weekly, multiple members buy, pantry is invisible at the shop.
+2. **User research:** Personas (home cook, working parent, elderly parent, student in shared flat); pain points ranked: duplicate purchases, expired dairy/vegetables, running out of staples mid-week, budget opacity.
+3. **Design decisions:** mobile-first bottom tabs (Home/Inventory/Shopping/Insights/Profile); one codebase for phone + laptop (Expo web); local-first so it works in a shop with no signal; transparent rule-based predictions (explainable in a viva — explicitly NOT "AI/ML"); ₹ + metric defaults; demo data clearly labelled and removable.
+4. **Prototype → product:** Expo Router screens, AsyncStorage local store behind a data-layer abstraction, Firebase/Firestore cloud layer with household-isolation rules, barcode + receipt review flows, offline pending-op queue with idempotency.
+5. **Testing:** Jest unit + scenario tests for units, low-stock, expiry, prediction, duplicate detection, idempotent purchase, budget, waste, assistant honesty (see TEST_RESULTS.md for actual results); manual web-export checks at phone and laptop widths.
+6. **Results:** Core end-to-end flows (add → consume → low-stock → suggested purchase → purchase exactly once → charts update) verified by automated scenario test + web export. APK is produced via EAS cloud build (see README) — no local Android SDK in the dev VM.
+7. **SDG relevance — SDG 12 (Responsible Consumption and Production):** expiry-aware use-first ordering, waste logging with reasons, duplicate-purchase warnings and run-out predictions directly target household food waste and over-buying (SDG 12.3: halve food waste).
+8. **Limitations & future work:** see docs/KNOWN_LIMITATIONS.md (Firestore rules publishing step, OCR endpoint configuration, push-notification scheduling limits, lawyer review before commercial launch).

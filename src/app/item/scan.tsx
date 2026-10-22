@@ -1,0 +1,7 @@
+
+import React,{useState} from 'react'; import { View } from 'react-native'; import { CameraView, useCameraPermissions } from 'expo-camera'; import { router } from 'expo-router'; import { Btn, Card, H, Input, Screen, T } from '../../components/ui';
+export default function Scan(){ const [perm, request]=useCameraPermissions(); const [code,setCode]=useState(''); const [scanned,setScanned]=useState(false);
+ if(!perm) return <Screen><T>Checking camera permission…</T></Screen>;
+ return <Screen><H>Scan barcode</H>{!perm.granted?<Card><T>Camera permission is needed to scan. You can also type the barcode manually — the app never invents product details for an unknown barcode.</T><Btn title="Grant camera permission" onPress={()=>request()}/></Card>:
+ <View style={{height:320,borderRadius:14,overflow:'hidden'}}><CameraView style={{flex:1}} barcodeScannerSettings={{barcodeTypes:['ean13','ean8','upc_a','upc_e','qr']}} onBarcodeScanned={scanned? undefined : ({data})=>{ setScanned(true); setCode(data); }}/></View>}
+ <Card><Input value={code} onChangeText={setCode} placeholder="Barcode (scanned or typed)"/><T sub>Optional lookup: if you know this product, continue to manual entry with the barcode pre-filled. Unknown barcodes fall back to manual entry — no details are fabricated.</T><Btn title="Continue to add item with this barcode" onPress={()=>router.push(`/item/edit?barcode=${encodeURIComponent(code)}`)}/></Card></Screen>; }

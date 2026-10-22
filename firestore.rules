@@ -1,0 +1,37 @@
+rules_version = '2';
+// Smart Household Inventory — household isolation (NoSQL equivalent of RLS intent).
+// Every household doc carries memberIds: [uid, ...]. Only members may read/write its data.
+// Collections used by the app: households, inventoryItems, batches, stockMovements,
+// shoppingLists, shoppingListItems, purchases, purchaseItems, priceHistory, wasteRecords,
+// notifications, householdGoals, auditEvents, profiles.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isMember(data) { return signedIn() && data.memberIds is list && request.auth.uid in data.memberIds; }
+    match /profiles/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+    match /households/{householdId} {
+      allow read: if isMember(resource.data);
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid
+                    && request.auth.uid in request.resource.data.memberIds;
+      allow update: if isMember(resource.data);
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+      match /members/{memberUid} {
+        allow read: if signedIn() && (request.auth.uid == memberUid || isMember(get(/databases/$(database)/documents/households/$(householdId)).data));
+        allow write: if signedIn() && isMember(get(/databases/$(database)/documents/households/$(householdId)).data);
+      }
+    }
+    // All household-scoped top-level collections: doc must carry householdId + memberIds.
+    match /{collection}/{docId} {
+      allow read: if collection in ['inventoryItems','batches','stockMovements','shoppingLists','shoppingListItems','purchases','purchaseItems','priceHistory','wasteRecords','notifications','householdGoals','auditEvents']
+                  && isMember(resource.data);
+      allow create: if collection in ['inventoryItems','batches','stockMovements','shoppingLists','shoppingListItems','purchases','purchaseItems','priceHistory','wasteRecords','notifications','householdGoals','auditEvents']
+                  && isMember(request.resource.data);
+      allow update: if collection in ['inventoryItems','batches','stockMovements','shoppingLists','shoppingListItems','purchases','purchaseItems','priceHistory','wasteRecords','notifications','householdGoals','auditEvents']
+                  && isMember(resource.data) && isMember(request.resource.data);
+      allow delete: if collection in ['inventoryItems','batches','stockMovements','shoppingLists','shoppingListItems','purchases','purchaseItems','priceHistory','wasteRecords','notifications','householdGoals','auditEvents']
+                  && isMember(resource.data);
+    }
+  }
+}
