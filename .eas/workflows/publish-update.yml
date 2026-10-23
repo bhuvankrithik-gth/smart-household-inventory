@@ -1,0 +1,11 @@
+name: Publish production update
+on:
+  workflow_dispatch:
+jobs:
+  publish_update:
+    type: update
+    environment: production
+    params:
+      channel: production
+      platform: android
+      message: "Fixes: household creation, sign-in persistence, barcode auto-fill, photo expiry"
