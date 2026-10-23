@@ -8,4 +8,4 @@ jobs:
     params:
       channel: production
       platform: android
-      message: "Fixes: household creation, sign-in persistence, barcode auto-fill, photo expiry"
+      message: "New look: redesigned interface — feature blocks, stat dashboard, roomier layout"
