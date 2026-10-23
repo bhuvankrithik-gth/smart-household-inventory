@@ -1,6 +1,6 @@
 name: Publish production update
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
 jobs:
   publish_update:
     type: update
