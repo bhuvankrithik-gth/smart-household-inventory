@@ -27,3 +27,15 @@ Changes: sample/demo dataset deleted (`src/lib/seed.ts` gone, store boots to an 
 | 4 | `npx expo lint` | ✅ Clean. |
 | 5 | `npx expo export --platform web` | ✅ **Exported: dist** — all route bundles built with the new dark UI and tab icons. |
 | 6 | `npx expo config --json` | ✅ version `1.1.0`, `userInterfaceStyle: 'dark'`, `updates.url` set to the EAS project URL, `runtimeVersion: { policy: 'appVersion' }`. |
+
+## v1.2.0 — built-in showcase (demo) account (2026-10-23)
+
+Changes: new `src/lib/showcase.ts` defines a login-activated showcase account (`demo@shi.app` / `demo1234`, display name Aarav Sharma) and a pure dataset builder whose batches are folded through the app's own `applyMovement` engine, so stock always matches movement math; all dates are relative to the day of first use. `login()` in `src/data/store.tsx` materialises the user + "Sharma Household" dataset on first showcase login (works on a fresh install and alongside existing accounts, without touching their data; afterwards the account logs in normally and resolves only its own household like any other). Dataset: 17 items, ~30 days of rice/oil consumption (rice prediction ≈ 23 days left at materialisation), sunflower oil low at 0.92 l, tomatoes expiring next day, "Weekly Shopping" list whose Basmati Rice entry triggers duplicate detection, 2 purchases in the last 8 days with matching rice/oil price-history points, ₹8,000 monthly budget in prefs, 1 expired-curd waste record. No UI text anywhere mentions the account (verified by grep over `src/app` + `src/components`: zero hits); version bumped to `1.2.0` (app.config.js + package.json). Storage key unchanged (`shi-db-v4`).
+
+| # | Command | Result |
+|---|---------|--------|
+| 1 | `npx tsc --noEmit` | ✅ **PASS — zero errors.** |
+| 2 | `npx jest` | ✅ **30/30 tests passed, 1 suite** — the 23 from v1.1.0 plus 7 new `showcase account dataset` tests (finite rice run-out prediction with reason; sunflower oil low-stock; tomatoes expiring; duplicate shopping entry detected; stock never negative, rice 6.6 kg / oil 0.92 l remaining; showcase household resolves only for the showcase user; every record carries the showcase householdId and every movement opId is in processedOps). |
+| 3 | `npx expo lint` | ✅ Clean. |
+| 4 | `npx expo export --platform web` | ✅ **Exported: dist.** |
+| 5 | `grep -rniE "demo\|sample" src/app src/components` | ✅ **ZERO hits** — no user-visible mention of the showcase account. |
