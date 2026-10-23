@@ -17,11 +17,22 @@ const cfg = {
 };
 export const firebaseConfigured = Boolean(cfg.apiKey && cfg.projectId && cfg.appId);
 export const firebaseConfig = cfg;
-// getReactNativePersistence ships in the React Native build of firebase/auth
-// (Metro resolves it at runtime); it is not part of the shared TS typings,
-// so it is pulled off the namespace defensively.
-const getReactNativePersistence = (FirebaseAuth as any).getReactNativePersistence as
-  ((storage: typeof AsyncStorage) => FirebaseAuth.Persistence) | undefined;
+// Self-contained AsyncStorage persistence for Firebase Auth. We implement the
+// Persistence interface directly on the app's own AsyncStorage instead of
+// relying on getReactNativePersistence being present in whichever
+// firebase/auth build the bundler resolved: when that export is missing (or
+// initializeAuth with it throws), getAuth() silently falls back to in-memory
+// persistence and the user gets signed out on every cold start — the
+// "login every time" bug. This implementation cannot silently go missing.
+class AsyncStoragePersistence {
+  type = 'LOCAL';
+  async _isAvailable(): Promise<boolean> { return true; }
+  async _set(key: string, value: unknown): Promise<void> { await AsyncStorage.setItem(key, JSON.stringify(value)); }
+  async _get(key: string): Promise<unknown> { const v = await AsyncStorage.getItem(key); return v ? JSON.parse(v) : null; }
+  async _remove(key: string): Promise<void> { await AsyncStorage.removeItem(key); }
+  _addListener(): void { /* single-instance app: no cross-tab listeners needed */ }
+  _removeListener(): void { /* no-op */ }
+}
 const { initializeAuth, getAuth } = FirebaseAuth;
 let app: FirebaseApp | undefined; let auth: FirebaseAuth.Auth | undefined; let db: Firestore | undefined;
 if (firebaseConfigured) {
@@ -30,8 +41,8 @@ if (firebaseConfigured) {
     try {
       // Native: persist the session in AsyncStorage so logins survive restarts.
       // Web: default (browser) persistence.
-      auth = Platform.OS !== 'web' && getReactNativePersistence
-        ? initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) })
+      auth = Platform.OS !== 'web'
+        ? initializeAuth(app, { persistence: new AsyncStoragePersistence() as any })
         : getAuth(app);
     } catch { auth = getAuth(app); }
     db = getFirestore(app);
