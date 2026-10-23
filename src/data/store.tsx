@@ -408,7 +408,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         { op: 'set', path: `shoppingLists/${uid('list')}`, data: { householdId: hhId, name: 'Weekly Shopping', createdAt: now } },
       ];
       optimisticRef.current.add(hhId); currentHhRef.current = hhId; setCurrentHouseholdId(hhId);
-      try { await attemptDocs(ops); return null; } catch { return 'Could not create the household. Please try again.'; }
+      // Two-phase commit: Firestore rules resolve membership with get() on the
+      // household doc, and get() cannot see writes from the same atomic batch —
+      // so the household doc must land first, then the member/invite/list docs.
+      try {
+        await attemptDocs([ops[0]]);
+        await attemptDocs(ops.slice(1));
+        return null;
+      } catch { return 'Could not create the household. Please try again.'; }
     },
     async joinHousehold(codeRaw) {
       if (!fbUser || !profile) return 'Login first';
