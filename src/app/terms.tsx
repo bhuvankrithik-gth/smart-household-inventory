@@ -9,7 +9,7 @@ export const TERMS_TEXT = `Terms of Service — Version 1.0 · Last updated: 22 
 5. Acceptable use: Do not use the app unlawfully, to infringe others' rights, or to attempt to access another household's data.
 6. FOOD SAFETY DISCLAIMER: Expiry and best-before dates in the app are dates YOU entered, shown as guidance only. The app never guarantees that any food is safe to eat. Check food yourself; when in doubt, throw it out. The app's authors are not liable for decisions you make about consuming food.
 7. BUDGET DISCLAIMER: Budget and price features are a personal record-keeping aid, not financial, investment or professional advice.
-8. Availability: The app is provided "as is". Local mode works offline on your device. Cloud features depend on Firebase (Google) availability and on you publishing the supplied Firestore security rules.
+8. Availability: The app is provided "as is". Your account and household data live in the cloud (Firebase, Google); the app keeps a working copy on your device so you can view and record while offline, and changes upload when you reconnect. Cloud features depend on Firebase availability and on the supplied Firestore security rules being published.
 9. Liability: To the maximum extent permitted by Indian law, liability is limited to direct losses caused by the app's proven fault. Nothing in these terms removes rights you have under the Consumer Protection Act, 2019 or the DPDP Act, 2023.
 10. Changes: If these terms change materially, the version number and date above will change and registration acceptance will be re-requested for new accounts.
 11. Governing law: India.

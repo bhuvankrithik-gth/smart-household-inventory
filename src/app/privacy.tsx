@@ -10,9 +10,9 @@ WHAT WE COLLECT
 
 WHY: solely to run the inventory, shopping, prediction, budget and sharing features you use.
 
-WHO SEES IT: only you and household members you invite. Cloud processing/storage is provided by Firebase (Google) in cloud mode; local mode stores data on your device only.
+WHO SEES IT: only you and household members you invite. Processing/storage is provided by Firebase (Google); a working copy is kept on your device so the app opens with your data while offline.
 
-RETENTION & DELETION: Data is kept until you delete it. In Profile you can export all data (JSON), delete your household's data, or delete your account and local data. In cloud mode, account deletion also deletes the Firebase Auth user where the SDK permits, and household Firestore documents you own. Consent can be withdrawn by deleting your account/data.
+RETENTION & DELETION: Data is kept until you delete it. In Profile you can export all data (JSON), delete your household's data, or delete your account entirely. Account deletion removes the households you own, your memberships elsewhere, your profile, and your Firebase Auth user. Consent can be withdrawn by deleting your account/data.
 
 YOUR RIGHTS (DPDP Act, 2023 & IT Act): access, correction, erasure, and grievance redressal. Use export/edit/delete in the app, or contact the grievance contact below.
 

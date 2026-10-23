@@ -1,7 +1,7 @@
 export type Unit = 'g'|'kg'|'ml'|'l'|'pcs'|'packet'|'box'|'bottle';
 export type MovementType = 'received'|'consumed'|'discarded'|'transferred'|'corrected'|'purchased';
-export interface User { id:string; name:string; email:string; passwordHash:string; createdAt:string; termsAcceptedAt?:string; termsVersion?:string }
-export interface Household { id:string; name:string; ownerId:string; inviteCode:string; createdAt:string }
+export interface User { id:string; name:string; email:string; passwordHash?:string; createdAt:string; termsAcceptedAt?:string; termsVersion?:string }
+export interface Household { id:string; name:string; ownerId:string; inviteCode:string; createdAt:string; memberIds?:string[]; monthlyBudget?:number; currency?:string; processedOps?:string[] }
 export interface Member { id:string; householdId:string; userId:string; name:string; email:string; role:'owner'|'member'; joinedAt:string }
 export interface Category { id:string; name:string }
 export const CATEGORIES = ['Grains, rice and flour','Pulses and legumes','Fruits and vegetables','Dairy and refrigerated','Snacks and packaged foods','Oils, spices and condiments','Cleaning supplies','Toiletries and personal care','Other household essentials'];

@@ -4,9 +4,17 @@
 
 A real, installable React Native (Expo, TypeScript) app for Indian households (₹, metric units): shared household inventory with batches & expiry, rule-based run-out predictions, smart shopping (purchase → inventory exactly once), budgets & price history, expiry-aware recipes, waste tracking (SDG 12), and a data-honest assistant. One codebase: Android APK + iOS-compatible + Expo web for laptops.
 
-## Modes — read this first
-- **Local mode (verified, default):** full app on-device via AsyncStorage. Works offline on a fresh phone with **no server**. On first open you create an account or sign in (in local mode accounts live on this device); then create a household, or join one with an invite code, and start tracking. The app starts completely empty — no sample data.
-- **Cloud mode (Firebase, integration-ready):** Firebase project **smart-household-inventory** (Spark, asia-south1 Mumbai, Email/Password enabled) config is bundled from `.env` (`EXPO_PUBLIC_FIREBASE_*`) via `app.config.js`. **Required one-time step before cloud works:** publish the rules — Firebase Console → Firestore Database → **Rules** → paste the repo's `firestore.rules` → **Publish** (or `firebase deploy --only firestore:rules` after your own `firebase login`). Until then Firestore is deny-all; the app shows a clear "cloud rules not yet published / permission-denied" state on the Login → Check cloud status button, and local mode keeps working.
+## Download the Android app
+**[⬇ Latest release (APK) — github.com/bhuvankrithik-gth/smart-household-inventory/releases/latest](https://github.com/bhuvankrithik-gth/smart-household-inventory/releases/latest)**
+
+Download the APK from the latest GitHub Release and install it on any Android phone (7.0+): open the file and allow "install from unknown apps" for your browser/files app when Android asks (normal for direct APK installs outside Play Store). Building from source with EAS instead is described below.
+
+## Accounts — cloud, on every device (v2.0)
+- **One account, any device:** accounts are real **Firebase Auth** accounts (project **smart-household-inventory**, Spark, asia-south1 Mumbai, Email/Password). Sign up once, then sign in on any phone or laptop and you see the **same households, inventory, lists and history** — data lives in **Cloud Firestore** and syncs live between devices.
+- **Sharing:** create a household and share its invite code; family members join with the code and see the same shared inventory. Access is enforced by `firestore.rules` (household membership on the household doc), so households are fully isolated from each other.
+- **Required one-time step before cloud works:** publish the rules — Firebase Console → Firestore Database → **Rules** → paste the repo's `firestore.rules` → **Publish** (or `firebase deploy --only firestore:rules` after your own `firebase login`). Until then Firestore is deny-all and sign-in/data calls will fail with permission errors.
+- **Offline:** the app keeps a working copy of your data on the device — it opens with your data and queues changes while offline, uploading them when you reconnect (conflicts are last-write-wins; see docs/KNOWN_LIMITATIONS.md).
+- **Upgrading from v1.x:** the first cloud sign-in on a device uploads that device's old local households into the new cloud account, once.
 
 ## Run it
 ```bash

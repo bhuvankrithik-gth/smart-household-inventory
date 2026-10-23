@@ -1,10 +1,12 @@
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore, collection, getDocs } from 'firebase/firestore';
+import * as FirebaseAuth from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 // Firebase client config is PUBLIC (identifies the project; security is enforced by
 // Firestore rules + Firebase Auth, NOT by hiding these values). No service-account key exists in the app.
-const extra:any = (Constants as any).expoConfig?.extra?.firebase || {};
+const extra: any = (Constants as any).expoConfig?.extra?.firebase || {};
 const cfg = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || extra.apiKey || '',
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || extra.authDomain || '',
@@ -15,16 +17,45 @@ const cfg = {
 };
 export const firebaseConfigured = Boolean(cfg.apiKey && cfg.projectId && cfg.appId);
 export const firebaseConfig = cfg;
-let app:FirebaseApp|undefined; let auth:Auth|undefined; let db:Firestore|undefined;
-if(firebaseConfigured){ try{ app = getApps().length? getApps()[0] : initializeApp(cfg); auth = getAuth(app); db = getFirestore(app); }catch{ /* local mode continues */ } }
+// getReactNativePersistence ships in the React Native build of firebase/auth
+// (Metro resolves it at runtime); it is not part of the shared TS typings,
+// so it is pulled off the namespace defensively.
+const getReactNativePersistence = (FirebaseAuth as any).getReactNativePersistence as
+  ((storage: typeof AsyncStorage) => FirebaseAuth.Persistence) | undefined;
+const { initializeAuth, getAuth } = FirebaseAuth;
+let app: FirebaseApp | undefined; let auth: FirebaseAuth.Auth | undefined; let db: Firestore | undefined;
+if (firebaseConfigured) {
+  try {
+    app = getApps().length ? getApps()[0] : initializeApp(cfg);
+    try {
+      // Native: persist the session in AsyncStorage so logins survive restarts.
+      // Web: default (browser) persistence.
+      auth = Platform.OS !== 'web' && getReactNativePersistence
+        ? initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) })
+        : getAuth(app);
+    } catch { auth = getAuth(app); }
+    db = getFirestore(app);
+  } catch { /* auth/db stay undefined; the store surfaces a clear not-configured state */ }
+}
 export { app as firebaseApp, auth as firebaseAuth, db as firestoreDb };
-// Firestore collection map (NoSQL, household isolation via firestore.rules):
-// households/{id}, households/{id}/members/{uid}, inventoryItems, batches, stockMovements,
-// shoppingLists, shoppingListItems, purchases, purchaseItems, priceHistory, wasteRecords,
-// notifications, householdGoals, auditEvents — every doc carries householdId + member check in rules.
-export type CloudStatus = 'not-configured'|'ok'|'permission-denied'|'error';
-export async function probeCloud():Promise<{status:CloudStatus; message:string}>{
-  if(!firebaseConfigured || !db) return { status:'not-configured', message:'Firebase is not configured in this build. Local mode is fully working.' };
-  try{ await getDocs(collection(db,'households')); return { status:'ok', message:'Firestore reachable and rules allow this read.' }; }
-  catch(e:any){ const code=e?.code||''; if(code.includes('permission-denied')) return { status:'permission-denied', message:'Cloud rules not yet published (or you are not a member). Firestore is still in production deny-all mode — publish firestore.rules from this repo in Firebase Console > Firestore > Rules > Publish. Local mode keeps working.' }; return { status:'error', message:`Firestore check failed (${code||'unknown'}). Local mode keeps working.` }; }
+// Firestore data map (v2.0, see docs/ARCHITECTURE.md):
+// profiles/{uid}; households/{hid} {name, ownerId, memberIds[], inviteCode, monthlyBudget?, currency?, processedOps[]}
+// + households/{hid}/members/{uid}; inviteCodes/{CODE} {householdId};
+// household-scoped top-level collections (every doc carries householdId):
+// inventoryItems, batches, stockMovements, shoppingLists, shoppingListItems,
+// purchases, priceHistory, wasteRecords. Access is enforced by firestore.rules.
+export function friendlyAuthError(e: any): string {
+  const code = String(e?.code || '');
+  if (code.includes('email-already-in-use')) return 'An account with this email already exists. Try logging in instead.';
+  if (code.includes('weak-password')) return 'Password is too weak — use at least 6 characters.';
+  if (code.includes('invalid-email')) return 'That email address looks invalid.';
+  if (code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) return 'Wrong email or password. Check your details and try again, or create an account instead.';
+  if (code.includes('too-many-requests')) return 'Too many attempts — please wait a bit and try again.';
+  if (code.includes('network-request-failed')) return 'Network problem — check your connection and try again.';
+  if (code.includes('requires-recent-login')) return 'For security, please log out, log back in, and then try again.';
+  return 'Something went wrong. Please try again.';
+}
+export function isOfflineError(e: any): boolean {
+  const code = String(e?.code || '');
+  return code.includes('unavailable') || code.includes('network-request-failed') || code.includes('deadline-exceeded');
 }

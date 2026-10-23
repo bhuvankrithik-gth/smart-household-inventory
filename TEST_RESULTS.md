@@ -39,3 +39,15 @@ Changes: new `src/lib/showcase.ts` defines a login-activated showcase account (`
 | 3 | `npx expo lint` | ✅ Clean. |
 | 4 | `npx expo export --platform web` | ✅ **Exported: dist.** |
 | 5 | `grep -rniE "demo\|sample" src/app src/components` | ✅ **ZERO hits** — no user-visible mention of the showcase account. |
+
+## v2.0.0 — Firebase cloud accounts + Firestore sync on any device (2026-10-23)
+
+Changes: the data layer (`src/data/store.tsx`) was rewritten behind the same context API. Firebase Auth (email/password, session persisted via AsyncStorage on native) is now the only account system — the local `users[]`/`passwordHash` machinery and the v1.2 local showcase login are gone; `src/lib/showcase.ts` remains as a pure dataset builder (`buildShowcaseDataset`/`buildShowcaseData`) for seeding the cloud showcase account externally (shape documented in docs/ARCHITECTURE.md). All household data lives in Firestore per the ARCHITECTURE data map (households with `memberIds`/`processedOps`, `members` subcollection, `inviteCodes` directory, 8 household-scoped collections), streamed via `onSnapshot`; mutations write through as batches, with stock adjust/purchase as transactions around the unchanged pure `applyMovement` engine (exactly-once via the household `processedOps` ledger). Offline: AsyncStorage mirror (`shi-cloud-cache-v1:{uid}`) hydrates the UI, failed native writes queue as serialised intents (`shi-pending-v1:{uid}`) and replay on the next sync/foreground. One-time migration uploads a device's v1.x local DB (`shi-db-v4`) into a fresh cloud account. Budget/currency moved onto the household doc. `firestore.rules` fully rewritten (membership via `get()` on the household doc; invite directory; self-service member create with valid invite; memberIds-only join branch for household updates). Screens updated for the async store API and cloud copy (login/register/reset/household/profile/settings/item/assistant); no visual redesign. Version bumped to `2.0.0` (app.config.js + package.json). Rules publishing and live-project verification remain the parent's step — not done here.
+
+| # | Command | Result |
+|---|---------|--------|
+| 1 | `npx tsc --noEmit` | ✅ **PASS — zero errors.** |
+| 2 | `npx jest` | ✅ **30/30 tests passed, 1 suite** — unchanged suite: logic engine, isolation helper, and showcase builder tests all still green (the store rewrite touched no `src/lib` behaviour). |
+| 3 | `npx expo lint` | ✅ **Clean — zero problems** (after restructuring for the React Compiler rules: no setState-in-effect, no ref reads during render; slice data is gated by the household it belongs to). |
+| 4 | `npx expo export --platform web` | ✅ **Exported: dist** — all route bundles built with the cloud data layer. |
+| 5 | `grep -rni demo src/app src/components src/data` | ✅ **ZERO hits** — no user-visible mention of the showcase account anywhere in UI or store. |

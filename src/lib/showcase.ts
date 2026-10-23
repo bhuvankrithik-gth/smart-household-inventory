@@ -1,10 +1,14 @@
 import { Batch, Household, Item, Member, Movement, MovementType, Prefs, PricePoint, Purchase, ShoppingItem, ShoppingList, User, Waste } from './types';
 import { applyMovement, hashPassword, uid } from './logic';
 // ---------- built-in showcase account ----------
+// Pure dataset builder for the cloud showcase account. Nothing in the app
+// imports this at runtime any more (v2.0 accounts are real Firebase Auth
+// users): the dataset is seeded EXTERNALLY into Firestore under the showcase
+// account's Firebase uid — see "Showcase dataset shape" in
+// docs/ARCHITECTURE.md. Ids and the local-era `passwordHash`/user id in the
+// returned objects are placeholders the seeder remaps to the real uid.
 // This account exists only in code: nothing is seeded at first run and no
-// screen mentions it. It materialises (user + a full household dataset) the
-// first time someone signs in with these credentials — see login() in
-// src/data/store.tsx. After that it behaves like any other local account.
+// screen mentions it.
 export const SHOWCASE_EMAIL = 'demo@shi.app';
 export const SHOWCASE_PASSWORD = 'demo1234';
 export const SHOWCASE_NAME = 'Aarav Sharma';
@@ -152,3 +156,5 @@ export function buildShowcaseDataset(now: Date = new Date()): ShowcaseDataset {
     prefs: { currency: '₹', budgetMonthly: 8000, budgetPeriod: 'monthly' },
   };
 }
+// Canonical name for external seeders (parent tooling); same builder.
+export const buildShowcaseData = buildShowcaseDataset;
