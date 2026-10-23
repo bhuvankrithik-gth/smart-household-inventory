@@ -63,6 +63,7 @@ module.exports = { expo: {
       "messagingSenderId": process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
       "appId": process.env.EXPO_PUBLIC_FIREBASE_APP_ID || ''
     },
-    "ocrApiUrl": process.env.EXPO_PUBLIC_OCR_API_URL || ''
+    "ocrApiUrl": process.env.EXPO_PUBLIC_OCR_API_URL || '',
+    "ocrApiKey": process.env.EXPO_PUBLIC_OCR_API_KEY || ''
   }
 } };
