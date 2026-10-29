@@ -1,5 +1,5 @@
 
-import React from 'react'; import { ScrollView } from 'react-native'; import { Card, H, Screen, T } from '../components/ui';
+import React from 'react'; import { ScrollView } from 'react-native'; import { BackBtn, Card, H, Screen, T } from '../components/ui';
 export const PRIVACY_TEXT = `Privacy Policy — Version 1.0 · Last updated: 22 October 2026
 
 WHAT WE COLLECT
@@ -24,4 +24,4 @@ GRIEVANCE CONTACT: [APP OWNER — fill in your own contact email here before pub
 
 CHANGES: Material changes update the version/date above.
 © 2026 Smart Household Inventory / app owner.`;
-export default function Privacy(){ return <Screen><ScrollView><H>Privacy Policy</H><Card><T>{PRIVACY_TEXT}</T></Card></ScrollView></Screen>; }
+export default function Privacy(){ return <Screen><ScrollView><BackBtn/><H>Privacy Policy</H><Card><T>{PRIVACY_TEXT}</T></Card></ScrollView></Screen>; }

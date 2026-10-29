@@ -1,5 +1,5 @@
 
-import React from 'react'; import { ScrollView } from 'react-native'; import { Card, H, Screen, T } from '../components/ui';
+import React from 'react'; import { ScrollView } from 'react-native'; import { BackBtn, Card, H, Screen, T } from '../components/ui';
 export const TERMS_TEXT = `Terms of Service — Version 1.0 · Last updated: 22 October 2026
 
 1. Who can use the app: You must be 18 or older, or use the app with the consent and supervision of a parent or legal guardian.
@@ -14,4 +14,4 @@ export const TERMS_TEXT = `Terms of Service — Version 1.0 · Last updated: 22 
 10. Changes: If these terms change materially, the version number and date above will change and registration acceptance will be re-requested for new accounts.
 11. Governing law: India.
 © 2026 Smart Household Inventory / app owner. All rights reserved.`;
-export default function Terms(){ return <Screen><ScrollView><H>Terms of Service</H><Card><T>{TERMS_TEXT}</T></Card></ScrollView></Screen>; }
+export default function Terms(){ return <Screen><ScrollView><BackBtn/><H>Terms of Service</H><Card><T>{TERMS_TEXT}</T></Card></ScrollView></Screen>; }

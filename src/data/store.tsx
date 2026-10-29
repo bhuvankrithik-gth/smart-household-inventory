@@ -10,7 +10,7 @@ import {
   runTransaction, setDoc, where, writeBatch, DocumentReference,
 } from 'firebase/firestore';
 import { Batch, DB, Household, Item, Member, Movement, MovementType, Prefs, ShoppingItem, Unit, User, Waste, defaultPrefs } from '../lib/types';
-import { applyMovement, findDuplicate, replenishment, uid } from '../lib/logic';
+import { applyMovement, findDuplicate, replenishment, resolveUser, uid } from '../lib/logic';
 import { firebaseAuth, firestoreDb, friendlyAuthError, isOfflineError } from '../lib/firebase';
 
 // ---------------------------------------------------------------------------
@@ -194,7 +194,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const authSubsRef = useRef<(() => void)[]>([]);
 
   // ---------- assembled db (same shape the screens were built against) ----------
-  const user: User | undefined = profile || undefined;
+  // Gate on auth state, not on the Firestore profile: the profile snapshot
+  // arrives over the network after the session restores, and gating on it
+  // sent every cold start to the login screen despite a valid session.
+  const user: User | undefined = resolveUser(profile, fbUser);
   const household: Household | undefined = households.find(h => h.id === currentHouseholdId);
   const hid = household?.id;
   // Slices belong to the household they were hydrated/subscribed for; mask

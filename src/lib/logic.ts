@@ -1,4 +1,4 @@
-import { Batch, Item, Member, Movement, Prefs, Purchase, ShoppingItem, Unit, Waste } from './types';
+import { Batch, Item, Member, Movement, Prefs, Purchase, ShoppingItem, Unit, User, Waste } from './types';
 // ---------- units ----------
 const FAMILY: Record<Unit,string> = { g:'mass', kg:'mass', ml:'volume', l:'volume', pcs:'count', packet:'count', box:'count', bottle:'count' };
 const TO_CANON: Record<Unit,number> = { g:1, kg:1000, ml:1, l:1000, pcs:1, packet:1, box:1, bottle:1 };
@@ -15,6 +15,24 @@ export function isOutOfStock(item:Item, batches:Batch[]){ return itemQty(item,ba
 export type ExpiryStatus='expired'|'expiring'|'ok'|'no-date'|'no-expiry';
 export function expiryStatus(b:Batch, now=new Date(), warnDays=7):ExpiryStatus{ if(b.noExpiry) return 'no-expiry'; if(!b.expiryDate) return 'no-date'; const d=(new Date(b.expiryDate).getTime()-now.getTime())/86400000; if(d<0) return 'expired'; if(d<=warnDays) return 'expiring'; return 'ok'; }
 export function daysToExpiry(b:Batch, now=new Date()){ if(!b.expiryDate) return null; return Math.ceil((new Date(b.expiryDate).getTime()-now.getTime())/86400000); }
+// ---------- auth identity ----------
+// The signed-in user for the app's front door. The Firestore profile arrives
+// over the network a moment AFTER auth state restores from the device, so the
+// gate must not wait for it: a restored Firebase session already proves the
+// user, and the profile only refines the display name afterwards.
+export interface AuthIdentity { uid: string; displayName?: string | null; email?: string | null }
+export function resolveUser(profile: User | null, fb: AuthIdentity | null): User | undefined {
+  if (profile) return profile;
+  if (!fb) return undefined;
+  return { id: fb.uid, name: fb.displayName || (fb.email || '').split('@')[0], email: fb.email || '', createdAt: '' };
+}
+// ---------- shopping ----------
+// A shopping line stores its TOTAL (per-item cost x quantity), so list totals
+// and "mark purchased" stay correct without multiplying later.
+export function lineTotal(qty: number, perItem?: number): number | undefined {
+  if (perItem === undefined || !(qty > 0)) return undefined;
+  return Math.round(qty * perItem * 100) / 100;
+}
 // ---------- pure idempotent stock engine ----------
 export interface StockState { batches:Batch[]; processedOps:string[] }
 export function applyMovement(state:StockState, m:Movement, item:Item):StockState{

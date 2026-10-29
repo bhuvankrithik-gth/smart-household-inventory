@@ -1,7 +1,8 @@
-import { extractExpiry } from '../expiryOcr';
+import { ddmmyyyyToIso, extractExpiry, isoToDdmmyyyy } from '../expiryOcr';
 import { parseOffProduct } from '../off';
+import { parseReceiptLines } from '../receiptOcr';
 import { describe, test, expect } from '@jest/globals';
-import { applyMovement, budgetSummary, convert, expiryStatus, findDuplicate, householdIdForUser, isLowStock, itemQty, monthSpend, predictRunOut, pricePerUnit, replenishment, shoppingTotals, spendByCategory, toCanonical, wasteSummary } from '../logic';
+import { applyMovement, budgetSummary, convert, expiryStatus, findDuplicate, householdIdForUser, isLowStock, itemQty, lineTotal, monthSpend, predictRunOut, pricePerUnit, replenishment, resolveUser, shoppingTotals, spendByCategory, toCanonical, wasteSummary } from '../logic';
 import { assistantAnswer, parseProposedAction } from '../assistant';
 import { scoreRecipes } from '../recipes';
 import { buildShowcaseDataset } from '../showcase';
@@ -33,3 +34,21 @@ describe('showcase account dataset',()=>{ const ds=buildShowcaseDataset(new Date
 });
 describe('open food facts parsing',()=>{ test('found product: name, first brand, cleaned pack size',()=>{ const p=parseOffProduct({status:1,product:{product_name:'Nutella',brands:'Nutella, Ferrero',quantity:'400 g e'}}); expect(p).toEqual({name:'Nutella',brand:'Nutella',packSize:'400 g'}); }); test('not found returns null',()=>{ expect(parseOffProduct({status:0})).toBeNull(); expect(parseOffProduct(null)).toBeNull(); expect(parseOffProduct({})).toBeNull(); }); test('missing name is never invented',()=>{ expect(parseOffProduct({status:1,product:{brands:'X'}})).toBeNull(); }); test('name falls back to product_name_en; brand/pack optional',()=>{ const p=parseOffProduct({status:1,product:{product_name_en:'Rice'}}); expect(p?.name).toBe('Rice'); expect(p?.brand).toBeUndefined(); expect(p?.packSize).toBeUndefined(); }); });
 describe('photo expiry extraction',()=>{ test('EXP with MM/YYYY expires at month end',()=>{ expect(extractExpiry('MRP 120.00 EXP 11/2026 BATCH A12')?.date).toBe('2026-11-30'); }); test('labelled full date wins over mfg date',()=>{ const g=extractExpiry('MFG 05/05/2026 EXP 04/05/2027'); expect(g?.date).toBe('2027-05-04'); }); test('best before date',()=>{ expect(extractExpiry('BEST BEFORE 30-06-2027')?.date).toBe('2027-06-30'); }); test('relative best-before uses mfg date',()=>{ expect(extractExpiry('BEST BEFORE 6 MONTHS FROM MFG DATE PKD 03/2026')?.date).toBe('2026-09-30'); }); test('month-name dates',()=>{ expect(extractExpiry('USE BY NOV 2027')?.date).toBe('2027-11-30'); expect(extractExpiry('EXP 15 JAN 2027')?.date).toBe('2027-01-15'); }); test('mfg-only text yields nothing',()=>{ expect(extractExpiry('MFG 01/02/2026 BATCH 9 MRP RS 99')).toBeNull(); }); test('no dates yields nothing',()=>{ expect(extractExpiry('HELLO WORLD NO DATES HERE')).toBeNull(); }); });
+describe('login gate identity (stay signed in)',()=>{ const prof:any={id:'u1',name:'Asha',email:'asha@x.local',createdAt:''}; const fb:any={uid:'u1',displayName:null,email:'asha@x.local'};
+ test('profile wins when present',()=>{ expect(resolveUser(prof,fb)).toBe(prof); });
+ test('restored session alone already identifies the user',()=>{ const u=resolveUser(null,fb); expect(u?.id).toBe('u1'); expect(u?.name).toBe('asha'); });
+ test('display name preferred over email prefix',()=>{ expect(resolveUser(null,{uid:'u2',displayName:'Asha',email:'a@x.local'})?.name).toBe('Asha'); });
+ test('no session means no user',()=>{ expect(resolveUser(null,null)).toBeUndefined(); }); });
+describe('shopping line totals',()=>{ test('per-item cost times count',()=>{ expect(lineTotal(5,20)).toBe(100); expect(lineTotal(3,33.33)).toBe(99.99); }); test('blank price stays blank',()=>{ expect(lineTotal(5,undefined)).toBeUndefined(); }); });
+describe('expiry date display format',()=>{ test('ISO converts to DD-MM-YYYY and back',()=>{ expect(isoToDdmmyyyy('2027-01-12')).toBe('12-01-2027'); expect(ddmmyyyyToIso('12-01-2027')).toBe('2027-01-12'); expect(ddmmyyyyToIso('12/01/2027')).toBe('2027-01-12'); }); test('impossible dates rejected',()=>{ expect(ddmmyyyyToIso('32-01-2027')).toBeNull(); expect(ddmmyyyyToIso('12-13-2027')).toBeNull(); expect(ddmmyyyyToIso('2027-01-12')).toBeNull(); }); });
+describe('photo expiry extraction (wider shapes)',()=>{ test('dashed month names and ordinals',()=>{ expect(extractExpiry('USE BY 12-Jan-26')?.date).toBe('2026-01-12'); expect(extractExpiry('USE BY 12th Jan 2026')?.date).toBe('2026-01-12'); }); test('hyphenated labels and BBE',()=>{ expect(extractExpiry('USE-BY 05/06/2027')?.date).toBe('2027-06-05'); expect(extractExpiry('BBE 120127')?.date).toBe('2027-01-12'); }); test('best before end month',()=>{ expect(extractExpiry('BEST BEFORE END JAN 2027')?.date).toBe('2027-01-31'); }); test('compact date equal to mfg is not returned as expiry',()=>{ expect(extractExpiry('MFG 120127 USE BY 120127')).toBeNull(); }); });
+describe('receipt line parsing',()=>{ const receipt=`SUPER MART
+GSTIN 29ABCDE1234F1Z5
+2 X MAGGI 12.00 24.00
+AMUL MILK 500ML 27.00
+RICE 5KG 289.00
+CGST @2.5% 15.00
+TOTAL 355.00
+THANK YOU VISIT AGAIN`;
+ test('items parsed, tax and totals skipped',()=>{ const lines=parseReceiptLines(receipt); expect(lines).toEqual([{name:'MAGGI',qty:2,price:24},{name:'AMUL MILK 500ML',qty:1,price:27},{name:'RICE 5KG',qty:1,price:289}]); });
+ test('no product lines yields nothing',()=>{ expect(parseReceiptLines('TOTAL 100.00\nCGST 5.00')).toEqual([]); }); });
