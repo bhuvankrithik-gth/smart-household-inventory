@@ -8,4 +8,4 @@ jobs:
     params:
       channel: production
       platform: android
-      message: "Fixes: stay signed in, category picker, receipt OCR auto-read, back buttons, DD-MM-YYYY expiry, in-form barcode scan, shopping line totals, Insights cleanup"
+      message: "Fix: expiry dates now recorded when marking shopping items purchased, and batch expiry dates are editable from the item edit screen"

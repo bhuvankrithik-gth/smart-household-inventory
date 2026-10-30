@@ -10,7 +10,7 @@ import {
   runTransaction, setDoc, where, writeBatch, DocumentReference,
 } from 'firebase/firestore';
 import { Batch, DB, Household, Item, Member, Movement, MovementType, Prefs, ShoppingItem, Unit, User, Waste, defaultPrefs } from '../lib/types';
-import { applyMovement, findDuplicate, replenishment, resolveUser, uid } from '../lib/logic';
+import { applyMovement, findDuplicate, replenishment, resolveUser, uid, withPurchaseExpiry } from '../lib/logic';
 import { firebaseAuth, firestoreDb, friendlyAuthError, isOfflineError } from '../lib/firebase';
 
 // ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ type DocOp = { op: 'set' | 'update' | 'delete'; path: string; data?: Record<stri
 type Intent =
   | { id: string; kind: 'docs'; ops: DocOp[]; createdAt: string }
   | { id: string; kind: 'adjust'; movement: Movement; item: Item; createdAt: string }
-  | { id: string; kind: 'purchase'; item: ShoppingItem; actualQty: number; actualPrice: number; opId: string; userId: string; userName: string; createdAt: string };
+  | { id: string; kind: 'purchase'; item: ShoppingItem; actualQty: number; actualPrice: number; opId: string; userId: string; userName: string; createdAt: string; expiry?: string };
 
 async function execDocOps(ops: DocOp[]): Promise<void> {
   for (let i = 0; i < ops.length; i += 400) {
@@ -98,7 +98,7 @@ async function execAdjustTx(m: Movement, item: Item): Promise<void> {
 type PurchaseOutcome = 'ok' | 'already-purchased' | 'already-recorded';
 // Purchase → inventory exactly once: the processedOps check, the shopping
 // item flip, the stock movement and the purchase record commit atomically.
-async function execPurchaseTx(s: ShoppingItem, actualQty: number, actualPrice: number, opId: string, userId: string, userName: string): Promise<PurchaseOutcome> {
+async function execPurchaseTx(s: ShoppingItem, actualQty: number, actualPrice: number, opId: string, userId: string, userName: string, expiry?: string): Promise<PurchaseOutcome> {
   const hid = s.householdId;
   const itemsSnap = await getDocs(query(collection(fs!, 'inventoryItems'), where('householdId', '==', hid)));
   const allItems: Item[] = itemsSnap.docs.map(d => ({ ...(d.data() as any), id: d.id }));
@@ -124,8 +124,9 @@ async function execPurchaseTx(s: ShoppingItem, actualQty: number, actualPrice: n
     const cur: Batch[] = snaps.filter(x => x.exists()).map(x => ({ ...(x.data() as any), id: x.id }));
     const mv: Movement = { id: uid('mv'), opId, householdId: hid, itemId: tgt.id, type: 'purchased', qty: actualQty, unit: tgt.unit, userId, userName, createdAt: new Date().toISOString(), batchId: uid('batch') };
     const st = applyMovement({ batches: cur, processedOps: processed }, mv, tgt);
+    const stamped = withPurchaseExpiry(st.batches, mv.batchId!, expiry);
     const beforeIds = new Set(cur.map(b => b.id));
-    for (const b of st.batches) { const ref = doc(fs!, 'batches', b.id); if (beforeIds.has(b.id)) tx.update(ref, strip(b)); else tx.set(ref, strip(b)); }
+    for (const b of stamped) { const ref = doc(fs!, 'batches', b.id); if (beforeIds.has(b.id)) tx.update(ref, strip(b)); else tx.set(ref, strip(b)); }
     tx.set(doc(fs!, 'stockMovements', mv.id), strip(mv));
     tx.update(shopRef, { status: 'purchased', actualQty, actualPrice, purchaseOpId: opId });
     const purId = uid('pur');
@@ -139,7 +140,7 @@ async function execPurchaseTx(s: ShoppingItem, actualQty: number, actualPrice: n
 async function execIntent(it: Intent): Promise<void> {
   if (it.kind === 'docs') return execDocOps(it.ops);
   if (it.kind === 'adjust') return execAdjustTx(it.movement, it.item);
-  await execPurchaseTx(it.item, it.actualQty, it.actualPrice, it.opId, it.userId, it.userName);
+  await execPurchaseTx(it.item, it.actualQty, it.actualPrice, it.opId, it.userId, it.userName, it.expiry);
 }
 
 async function deleteHouseholdInternal(h: Household): Promise<void> {
@@ -157,9 +158,9 @@ export interface Store {
   register: (n: string, e: string, p: string) => Promise<string | null>; login: (e: string, p: string) => Promise<string | null>; logout: () => Promise<void>; resetPassword: (e: string) => Promise<string>;
   deleteHouseholdData: () => Promise<string | null>; deleteAccount: () => Promise<string | null>;
   createHousehold: (name: string) => Promise<string | null>; joinHousehold: (code: string) => Promise<string | null>; switchHousehold: (id: string) => void; leaveHousehold: () => Promise<void>; removeMember: (id: string) => Promise<void>; regenerateInviteCode: () => Promise<string | null>;
-  addItem: (data: any, qty: number, price?: number, expiry?: string) => Promise<string>; editItem: (id: string, data: any) => Promise<void>; archiveItem: (id: string) => Promise<void>; deleteItem: (id: string) => Promise<void>;
+  addItem: (data: any, qty: number, price?: number, expiry?: string) => Promise<string>; editItem: (id: string, data: any) => Promise<void>; updateBatchExpiry: (batchId: string, expiry: string | null) => Promise<void>; archiveItem: (id: string) => Promise<void>; deleteItem: (id: string) => Promise<void>;
   adjust: (itemId: string, type: MovementType, qty: number, reason?: string, toLocation?: string) => Promise<string | null>;
-  addList: (name: string) => void; addShopping: (name: string, qty: number, unit: Unit, price?: number, itemId?: string, listId?: string) => { dup: string | null; id: string }; removeShopping: (id: string) => void; purchaseShopping: (id: string, actualQty: number, actualPrice: number) => Promise<string | null>; generateSuggestions: () => number;
+  addList: (name: string) => void; addShopping: (name: string, qty: number, unit: Unit, price?: number, itemId?: string, listId?: string) => { dup: string | null; id: string }; removeShopping: (id: string) => void; purchaseShopping: (id: string, actualQty: number, actualPrice: number, expiry?: string) => Promise<string | null>; generateSuggestions: () => number;
   addWaste: (w: any) => void; updatePrefs: (p: Partial<Prefs>) => void; exportJSON: () => string; consumeRecipe: (names: string[]) => void;
 }
 const Ctx = createContext<Store | null>(null);
@@ -487,6 +488,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return id;
     },
     async editItem(id, data) { await attemptDocs([{ op: 'update', path: `inventoryItems/${id}`, data: { ...data, updatedAt: new Date().toISOString() } }]).catch(() => false); },
+    // Set or clear one batch's expiry date from the edit screen. Clearing
+    // writes expiryDate null (clean() keeps null, strips undefined) with
+    // noExpiry true, so expiry checks, FIFO consumption order and the detail
+    // page all treat it as dateless instead of seeing a stale date.
+    async updateBatchExpiry(batchId, expiry) { await attemptDocs([{ op: 'update', path: `batches/${batchId}`, data: expiry ? { expiryDate: expiry, noExpiry: false } : { expiryDate: null, noExpiry: true } }]).catch(() => false); },
     async archiveItem(id) { await attemptDocs([{ op: 'update', path: `inventoryItems/${id}`, data: { archived: true } }]).catch(() => false); },
     async deleteItem(id) {
       const ops: DocOp[] = [{ op: 'delete', path: `inventoryItems/${id}` }, ...db.batches.filter(b => b.itemId === id).map(b => ({ op: 'delete' as const, path: `batches/${b.id}` }))];
@@ -496,18 +502,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addList(name) { if (hid) void attemptDocs([{ op: 'set', path: `shoppingLists/${uid('list')}`, data: { householdId: hid, name, createdAt: new Date().toISOString() } }]).catch(() => {}); },
     addShopping(name, qty, unit, price, itemId, listId) { return doAddShopping(name, qty, unit, price, itemId, listId); },
     removeShopping(id) { void attemptDocs([{ op: 'delete', path: `shoppingListItems/${id}` }]).catch(() => {}); },
-    async purchaseShopping(id, actualQty, actualPrice) {
+    async purchaseShopping(id, actualQty, actualPrice, expiry) {
       const s = db.shopping.find(x => x.id === id); if (!s) return 'Not found';
       if (s.status === 'purchased') return 'Already purchased — inventory was updated exactly once for this item.';
       if (!fbUser) return 'Login first';
       const opId = s.purchaseOpId || uid('op');
       try {
-        const r = await execPurchaseTx(s, actualQty, actualPrice, opId, fbUser.uid, profile?.name || 'You');
+        const r = await execPurchaseTx(s, actualQty, actualPrice, opId, fbUser.uid, profile?.name || 'You', expiry);
         if (r === 'already-recorded') return 'Already recorded (duplicate prevented).';
         if (r === 'already-purchased') return 'Already purchased — inventory was updated exactly once for this item.';
         return null;
       } catch (e: any) {
-        if (isOfflineError(e)) { enqueue({ id: uid('intent'), kind: 'purchase', item: s, actualQty, actualPrice, opId, userId: fbUser.uid, userName: profile?.name || 'You', createdAt: new Date().toISOString() }); return null; }
+        if (isOfflineError(e)) { enqueue({ id: uid('intent'), kind: 'purchase', item: s, actualQty, actualPrice, opId, userId: fbUser.uid, userName: profile?.name || 'You', createdAt: new Date().toISOString(), expiry }); return null; }
         return (e?.message as string) || 'Could not record the purchase';
       }
     },

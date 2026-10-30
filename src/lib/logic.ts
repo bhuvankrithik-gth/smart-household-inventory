@@ -54,6 +54,14 @@ export function applyMovement(state:StockState, m:Movement, item:Item):StockStat
   }
   return { batches: batches.filter(b=>b.qty>0 || sign>0), processedOps:[...state.processedOps, m.opId] };
 }
+// Stamp an expiry date onto the batch a purchase just created. A purchase
+// movement carries no expiry, so without this the batch (and the edit screen)
+// can never show one. A blank date leaves batches untouched: the batch stays
+// "not recorded" rather than being mislabelled "no expiry".
+export function withPurchaseExpiry(batches:Batch[], batchId:string, expiry?:string):Batch[]{
+  if(!expiry) return batches;
+  return batches.map(b=>b.id===batchId?{...b, expiryDate:expiry, noExpiry:false}:b);
+}
 // ---------- prediction ----------
 export interface Prediction { days:number|null; dailyRate:number; confidence:'high'|'medium'|'low'|'insufficient'; reason:string }
 export function predictRunOut(item:Item, batches:Batch[], movements:Movement[], now=new Date()):Prediction{
